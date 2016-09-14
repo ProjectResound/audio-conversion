@@ -3,7 +3,7 @@ require 'optparse'
 require 'streamio-ffmpeg'
 
 options = {}
-EXTS = %w[flac aac mp3 he-aac]
+EXTS = %w[flac aac mp3 128k-mp3 he-aac]
 
 OptionParser.new do |opts|
   opts.banner = "Usage: convert.rb [options]"
@@ -41,7 +41,14 @@ def convert(file:, basename:, og_extension:, output:)
           audio_codec: 'libmp3lame',
           audio_bitrate: '64'
       }
-      output_file = "output/#{basename}#{og_extension}.mp3"
+      output_file = "output/#{basename}#{og_extension}.64k.mp3"
+    when '128k-mp3'
+      encoding_options = {
+          audio_codec: 'libmp3lame',
+          audio_bitrate: '128'
+      }
+      output_file = "output/#{basename}#{og_extension}.128k.mp3"
+
   end
 
   start = Time.now
@@ -50,8 +57,9 @@ def convert(file:, basename:, og_extension:, output:)
 
   puts "Original size: #{(file.size/1048576.0).round}MB"
   puts "Transcoded size: #{(transcoded_file.size/1048576.0).round}MB"
-  puts "Transcoded bitrate: #{(transcoded_file.audio_bitrate/1000).round(2)}k"
+  puts "Transcoded: #{(transcoded_file.audio_stream)}"
   puts "Took: #{(finish - start).round(2)}s"
+  puts "===================================================================\n\n\n"
 end
 
 if options[:file]
@@ -93,6 +101,13 @@ if options[:file]
         output: 'mp3',
         og_extension: '.flac'
     )
+    # flac => 128k-mp3
+    convert(
+        file: FFMPEG::Movie.new("output/#{basename}.wav.flac"),
+        basename: basename,
+        output: '128k-mp3',
+        og_extension: '.flac'
+    )
     # flac => he-aac
     convert(
         file: FFMPEG::Movie.new("output/#{basename}.wav.flac"),
@@ -105,6 +120,13 @@ if options[:file]
         file: FFMPEG::Movie.new("output/#{basename}.wav.m4a"),
         basename: basename,
         output: 'mp3',
+        og_extension: '.aac'
+    )
+    # aac => 128k-mp3
+    convert(
+        file: FFMPEG::Movie.new("output/#{basename}.wav.m4a"),
+        basename: basename,
+        output: '128k-mp3',
         og_extension: '.aac'
     )
     # aac => he-aac
